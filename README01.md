@@ -1045,3 +1045,1087 @@ return new class extends Migration
 ```
 
 - `% php artisan migrate`を実行  
+
+## 求人情報のスクレイピングの実装
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapingMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use Carbon\Carbon;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class ScrapeMynavi extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        // $this->truncateTables(); // 取り敢えずこっちは動かないようにしておく
+        $this->saveUrls();
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+        DB::table('mynavi_jobs')->truncate(); // 追加
+    }
+
+    private function saveUrls()
+    {
+        foreach (range(1, 1) as $num) {
+            $url = 'https://tenshoku.mynavi.jp/list/pg' . $num . '/';
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ];
+            });
+
+            DB::table('mynavi_urls')->insert($urls);
+            // sleep(30);
+        }
+    }
+}
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapingMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\MynaviUrl; // 追加
+use Carbon\Carbon;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class ScrapeMynavi extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        // $this->truncateTables();
+        // $this->saveUrls(); コメントアウトしておく
+        $this->saveJobs(); // 追加
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+        DB::table('mynavi_jobs')->truncate();
+    }
+
+    private function saveUrls()
+    {
+        foreach (range(1, 1) as $num) {
+            $url = 'https://tenshoku.mynavi.jp/list/pg' . $num . '/';
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ];
+            });
+
+            DB::table('mynavi_urls')->insert($urls);
+            // sleep(30);
+        }
+    }
+
+    // 追加
+    private function saveJobs()
+    {
+        foreach (MynaviUrl::all() as $mynaviUrl) {
+            $url = $mynaviUrl->url;
+            dump($url);
+        }
+    }
+    // ここまで
+}
+```
+
+- `% php artisan scrape:mynavi`を実行  
+
+```:terminal
+"/jobinfo-345749-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-94446-1-36-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-325812-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-350810-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-134413-1-358-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-311669-1-6-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-161969-1-22-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-288996-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-115059-1-36-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-194596-1-27-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-350562-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-102553-1-123-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-111025-1-150-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-285227-1-9-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-350857-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-209712-1-130-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-201893-1-8-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-105609-1-25-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-170136-1-13-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-142336-1-25-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-104359-1-69-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-331154-1-6-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-189878-1-12-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-36728-1-68-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-331239-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-264297-1-9-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-177344-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-303174-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-121217-1-83-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-293882-1-16-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-332593-1-15-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-170601-1-360-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-352750-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-259912-1-14-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-46275-1-35-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-351634-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-348644-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-97461-1-51-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-352454-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-346410-1-5-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-187155-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-351909-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-323163-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-300676-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-188493-1-128-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-135431-1-298-3/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-340399-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-345749-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-94446-1-36-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-325812-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-350810-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-134413-1-358-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-311669-1-6-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-161969-1-22-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-288996-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-115059-1-36-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-194596-1-27-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-350562-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-102553-1-123-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-111025-1-150-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-285227-1-9-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-350857-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-209712-1-130-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-201893-1-8-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-105609-1-25-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-170136-1-13-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-142336-1-25-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-104359-1-69-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-331154-1-6-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-189878-1-12-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-36728-1-68-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-331239-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-264297-1-9-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-177344-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-303174-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-121217-1-83-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-293882-1-16-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-332593-1-15-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-170601-1-360-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-352750-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-259912-1-14-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-46275-1-35-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-351634-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-348644-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-97461-1-51-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-352454-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-346410-1-5-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-187155-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-351909-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-323163-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-300676-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-188493-1-128-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-135431-1-298-3/" // app/Console/Commands/ScrapeMynavi.php:69
+"/jobinfo-340399-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:69
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapingMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\MynaviUrl;
+use Carbon\Carbon;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class ScrapeMynavi extends Command
+{
+    const HOST = 'https://tenshoku.mynavi.jp'; // 追加
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        // $this->truncateTables();
+        // $this->saveUrls();
+        $this->saveJobs();
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+        DB::table('mynavi_jobs')->truncate();
+    }
+
+    private function saveUrls()
+    {
+        foreach (range(1, 1) as $num) {
+            $url = 'https://tenshoku.mynavi.jp/list/pg' . $num . '/';
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ];
+            });
+
+            DB::table('mynavi_urls')->insert($urls);
+            // sleep(30);
+        }
+    }
+
+    private function saveJobs()
+    {
+        foreach (MynaviUrl::all() as $mynaviUrl) {
+            $url = $this::HOST . $mynaviUrl->url; // 編集
+            dump($url);
+        }
+    }
+}
+```
+
+- `% php artisan scrape:mynavi`を実行  
+
+```:terminal
+"https://tenshoku.mynavi.jp/jobinfo-345749-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-94446-1-36-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-325812-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-350810-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-134413-1-358-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-311669-1-6-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-161969-1-22-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-288996-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-115059-1-36-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-194596-1-27-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-350562-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-102553-1-123-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-111025-1-150-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-285227-1-9-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-350857-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-209712-1-130-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-201893-1-8-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-105609-1-25-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-170136-1-13-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-142336-1-25-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-104359-1-69-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-331154-1-6-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-189878-1-12-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-36728-1-68-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-331239-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-264297-1-9-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-177344-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-303174-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-121217-1-83-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-293882-1-16-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-332593-1-15-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-170601-1-360-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-352750-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-259912-1-14-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-46275-1-35-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-351634-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-348644-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-97461-1-51-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-352454-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-346410-1-5-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-187155-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-351909-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-323163-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-300676-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-188493-1-128-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-135431-1-298-3/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-340399-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-345749-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-94446-1-36-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-325812-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-350810-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-134413-1-358-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-311669-1-6-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-161969-1-22-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-288996-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-115059-1-36-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-194596-1-27-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-350562-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-102553-1-123-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-111025-1-150-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-285227-1-9-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-350857-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-209712-1-130-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-201893-1-8-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-105609-1-25-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-170136-1-13-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-142336-1-25-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-104359-1-69-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-331154-1-6-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-189878-1-12-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-36728-1-68-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-331239-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-264297-1-9-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-177344-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-303174-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-121217-1-83-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-293882-1-16-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-332593-1-15-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-170601-1-360-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-352750-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-259912-1-14-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-46275-1-35-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-351634-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-348644-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-97461-1-51-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-352454-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-346410-1-5-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-187155-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-351909-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-323163-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-300676-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-188493-1-128-1/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-135431-1-298-3/" // app/Console/Commands/ScrapeMynavi.php:70
+"https://tenshoku.mynavi.jp/jobinfo-340399-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:70
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapingMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\MynaviUrl;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class ScrapeMynavi extends Command
+{
+    const HOST = 'https://tenshoku.mynavi.jp';
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        $this->truncateTables(); // 一旦解除して試す
+        $this->saveUrls(); // 一旦解除して試す
+        $this->saveJobs();
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+        DB::table('mynavi_jobs')->truncate();
+    }
+
+    private function saveUrls()
+    {
+        foreach (range(1, 1) as $num) {
+            $url = $this::HOST . '/list/pg' . $num . '/'; // 編集
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            });
+
+            DB::table('mynavi_urls')->insert($urls);
+            sleep(30);
+        }
+    }
+
+    private function saveJobs()
+    {
+        foreach (MynaviUrl::all() as $mynaviUrl) {
+            $url = $this::HOST . $mynaviUrl->url;
+            dump($url);
+        }
+    }
+}
+```
+
+- `% php artisan scrape:mynavi`を実行  
+
+```terminal
+groovy@groovy-no-MBP scraping_prac % php artisan scrape:mynavi 
+"https://tenshoku.mynavi.jp/jobinfo-345749-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-94446-1-36-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-325812-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-350810-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-134413-1-358-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-311669-1-6-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-161969-1-22-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-288996-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-115059-1-36-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-194596-1-27-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-350562-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-102553-1-123-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-111025-1-150-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-285227-1-9-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-350857-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-209712-1-130-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-201893-1-8-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-105609-1-25-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-170136-1-13-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-142336-1-25-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-104359-1-69-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-331154-1-6-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-189878-1-12-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-36728-1-68-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-331239-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-264297-1-9-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-177344-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-303174-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-121217-1-83-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-293882-1-16-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-332593-1-15-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-170601-1-360-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-352750-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-259912-1-14-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-46275-1-35-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-351634-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-348644-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-97461-1-51-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-352454-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-346410-1-5-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-187155-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-351909-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-323163-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-300676-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-188493-1-128-1/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-135431-1-298-3/" // app/Console/Commands/ScrapeMynavi.php:69
+"https://tenshoku.mynavi.jp/jobinfo-340399-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:69
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapingMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\MynaviUrl;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class ScrapeMynavi extends Command
+{
+    const HOST = 'https://tenshoku.mynavi.jp';
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        // $this->truncateTables();
+        // $this->saveUrls();
+        $this->saveJobs();
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+        DB::table('mynavi_jobs')->truncate();
+    }
+
+    private function saveUrls()
+    {
+        foreach (range(1, 1) as $num) {
+            $url = $this::HOST . '/list/pg' . $num . '/';
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            });
+
+            DB::table('mynavi_urls')->insert($urls);
+            sleep(30);
+        }
+    }
+
+    private function saveJobs()
+    {
+        foreach (MynaviUrl::all() as $mynaviUrl) {
+            $url = $this::HOST . $mynaviUrl->url;
+            // 編集
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            });
+            // ここまで
+        }
+    }
+}
+```
+
+- __取得したい箇所__  
+
+```html:sample.html
+<h1>
+    <span class="occName">※★年休126日＆10連休実績有【サポート事務】学歴不問/全国募集</span> <!--occNameのテキストを取得したい (title)-->
+    <span class="companyName">株式会社コプロコンストラクション</span>
+    <span class="companyNameAdd">育休取得率100％｜土日祝休｜有給平均取得10.95日｜転勤なし</span>
+</h1>
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapingMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\MynaviUrl;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class ScrapeMynavi extends Command
+{
+    const HOST = 'https://tenshoku.mynavi.jp';
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        // $this->truncateTables();
+        // $this->saveUrls();
+        $this->saveJobs();
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+        DB::table('mynavi_jobs')->truncate();
+    }
+
+    private function saveUrls()
+    {
+        foreach (range(1, 1) as $num) {
+            $url = $this::HOST . '/list/pg' . $num . '/';
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            });
+
+            DB::table('mynavi_urls')->insert($urls);
+            sleep(30);
+        }
+    }
+
+    private function saveJobs()
+    {
+        foreach (MynaviUrl::all() as $mynaviUrl) {
+            $url = $this::HOST . $mynaviUrl->url;
+            $crawler = \Goutte::request('GET', $url);
+            dump($crawler->filter('.occName')->text()); // 編集
+            break; // 一件取得したら抜ける
+            sleep(30);
+        }
+    }
+}
+```
+
+- `% php artisan scrape:mynavi`を実行  
+
+```:terminal
+"新店舗計画中！モスバーガーの【店舗スタッフ】★月給27万円～" // app/Console/Commands/ScrapeMynavi.php:70
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapingMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\mynaviJob;
+use App\Models\MynaviUrl;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class ScrapeMynavi extends Command
+{
+    const HOST = 'https://tenshoku.mynavi.jp';
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        // $this->truncateTables();
+        // $this->saveUrls();
+        $this->saveJobs();
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+        DB::table('mynavi_jobs')->truncate();
+    }
+
+    private function saveUrls()
+    {
+        foreach (range(1, 1) as $num) {
+            $url = $this::HOST . '/list/pg' . $num . '/';
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            });
+
+            DB::table('mynavi_urls')->insert($urls);
+            sleep(30);
+        }
+    }
+
+    private function saveJobs()
+    {
+        foreach (MynaviUrl::all() as $mynaviUrl) {
+            $url = $this::HOST . $mynaviUrl->url;
+            $crawler = \Goutte::request('GET', $url);
+            // 編集
+            mynaviJob::create([
+                'url' => $url,
+                'title' => $this->getTitle($crawler),
+                'company_name' => '',
+                'features' => '',
+            ]);
+            // ここまで
+            break;
+            sleep(30);
+        }
+    }
+
+    // 追加
+    private function getTitle($crawler)
+    {
+        return $crawler->filter('.occName')->text();
+    }
+    // ここまで
+}
+```
+
+- `% php artisan scrape:mynavi`を実行(mynavi_jobsテーブルにデータが入ったか確認する)  
+
+- __会社名を取得したい__  
+
+```html:sample.html
+<h1>
+    <span class="occName">※★年休126日＆10連休実績有【サポート事務】学歴不問/全国募集</span>
+    <span class="companyName">株式会社コプロコンストラクション</span> <!-- ここを取得したい -->
+    <span class="companyNameAdd">育休取得率100％｜土日祝休｜有給平均取得10.95日｜転勤なし</span>
+</h1>
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapingMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\mynaviJob;
+use App\Models\MynaviUrl;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class ScrapeMynavi extends Command
+{
+    const HOST = 'https://tenshoku.mynavi.jp';
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        // $this->truncateTables();
+        // $this->saveUrls();
+        $this->saveJobs();
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+        DB::table('mynavi_jobs')->truncate();
+    }
+
+    private function saveUrls()
+    {
+        foreach (range(1, 1) as $num) {
+            $url = $this::HOST . '/list/pg' . $num . '/';
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            });
+
+            DB::table('mynavi_urls')->insert($urls);
+            sleep(30);
+        }
+    }
+
+    private function saveJobs()
+    {
+        foreach (MynaviUrl::all() as $mynaviUrl) {
+            $url = $this::HOST . $mynaviUrl->url;
+            $crawler = \Goutte::request('GET', $url);
+            mynaviJob::create([
+                'url' => $url,
+                'title' => $this->getTitle($crawler),
+                'company_name' => $this->getCompanyName($crawler), // 編集
+                'features' => '',
+            ]);
+            break;
+            sleep(30);
+        }
+    }
+
+    private function getTitle($crawler)
+    {
+        return $crawler->filter('.occName')->text();
+    }
+
+    // 追加
+    private function getCompanyName($crawler)
+    {
+        return $crawler->filter('.companyName')->text();
+    }
+    // ここまで
+}
+```
+
+- `% php artisan scrape:mynavi`を実行(company_nameにデータが入るか確認)  
+
+- __featuresを取得したい__  
+
+```html:sample.html
+<ul class="cassetteRecruit__attribute cassetteRecruit__attribute-jobinfo"> <!-- まずここのクラス名を取得したい -->
+    <li class="cassetteRecruit__attributeLabel"> <!-- 次にこのクラスを取得  -->
+        <span class="labelEmploymentStatus">正社員</span> <!-- 最終的にここのテキストを取得したい -->
+    </li>
+    <li class="cassetteRecruit__attributeLabel">
+        <span class="labelCondition">300万～500万円</span>
+    </li>
+    <li class="cassetteRecruit__attributeLabel">
+        <span class="labelCondition">職種・業種未経験OK</span>
+    </li>
+
+    <li class="cassetteRecruit__attributeLabel">
+        <span class="labelCondition">学歴不問</span>
+    </li>
+    <li class="cassetteRecruit__attributeLabel">
+        <span class="labelCondition">第二新卒歓迎</span>
+    </li>
+    <li class="cassetteRecruit__attributeLabel">
+        <span class="labelCondition">転勤なし</span>
+    </li>
+    <li class="cassetteRecruit__attributeLabel">
+        <a href="/woman/"><span class="labelWoman">女性のおしごと掲載中</span></a>
+    </li>
+</ul>
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapingMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\mynaviJob;
+use App\Models\MynaviUrl;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class ScrapeMynavi extends Command
+{
+    const HOST = 'https://tenshoku.mynavi.jp';
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        // $this->truncateTables();
+        // $this->saveUrls();
+        $this->saveJobs();
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+        DB::table('mynavi_jobs')->truncate();
+    }
+
+    private function saveUrls()
+    {
+        foreach (range(1, 1) as $num) {
+            $url = $this::HOST . '/list/pg' . $num . '/';
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            });
+
+            DB::table('mynavi_urls')->insert($urls);
+            sleep(30);
+        }
+    }
+
+    private function saveJobs()
+    {
+        foreach (MynaviUrl::all() as $mynaviUrl) {
+            $url = $this::HOST . $mynaviUrl->url;
+            $crawler = \Goutte::request('GET', $url);
+            mynaviJob::create([
+                'url' => $url,
+                'title' => $this->getTitle($crawler),
+                'company_name' => $this->getCompanyName($crawler),
+                'features' => $this->getFeatures($crawler), // 編集
+            ]);
+            break;
+            sleep(30);
+        }
+    }
+
+    private function getTitle($crawler)
+    {
+        return $crawler->filter('.occName')->text();
+    }
+
+    private function getCompanyName($crawler)
+    {
+        return $crawler->filter('.companyName')->text();
+    }
+
+    // 追加
+    private function getFeatures($crawler)
+    {
+        $features = $crawler->filter('.cassetteRecruit__attribute.cassetteRecruit__attribute-jobinfo .cassetteRecruit__attributeLabel span')->each(function ($node) {
+            return $node->text();
+        });
+
+        return implode(',', $features);
+    }
+    // ここまで
+}
+```
+
+- `% php artisan scrape:mynavi`を実行(データベースに入っているか確認)  

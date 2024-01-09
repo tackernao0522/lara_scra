@@ -103,5 +103,9 @@ class ScrapeMynavi extends Command
     private function exportCsv()
     {
         $file = fopen(storage_path($this::FILE_PATH), 'w');
+
+        if (!$file) {
+            throw new \Exception('ファイルの作成に失敗しました');
+        }
     }
 }

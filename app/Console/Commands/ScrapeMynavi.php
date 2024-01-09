@@ -29,6 +29,17 @@ class ScrapeMynavi extends Command
      */
     public function handle()
     {
+        $this->truncateTables();
+        $this->saveUrls();
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+    }
+
+    private function saveUrls()
+    {
         $url = 'https://tenshoku.mynavi.jp/list/pg3/';
         $crawler = \Goutte::request('GET', $url);
         $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {

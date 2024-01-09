@@ -108,6 +108,8 @@ class ScrapeMynavi extends Command
             throw new \Exception('ファイルの作成に失敗しました');
         }
 
-        fputcsv($file, ['id', 'url', 'title', 'company_name', 'features']);
+        if (!fputcsv($file, ['id', 'url', 'title', 'company_name', 'features'])) {
+            throw new \Exception('ヘッダーの書き込みに失敗しました。');
+        };
     }
 }

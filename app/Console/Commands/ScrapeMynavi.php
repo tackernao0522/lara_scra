@@ -40,19 +40,22 @@ class ScrapeMynavi extends Command
 
     private function saveUrls()
     {
-        $url = 'https://tenshoku.mynavi.jp/list/pg3/';
-        $crawler = \Goutte::request('GET', $url);
-        $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
-            $href = $node->attr('href');
-            $fullUrl = 'https:' . $href;
-            $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
-            return [
-                'url' => $trimmedUrl,
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
-            ];
-        });
+        foreach (range(1, 1) as $num) {
+            $url = 'https://tenshoku.mynavi.jp/list/pg' . $num . '/';
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ];
+            });
 
-        DB::table('mynavi_urls')->insert($urls);
+            DB::table('mynavi_urls')->insert($urls);
+            // sleep(30);
+        }
     }
 }

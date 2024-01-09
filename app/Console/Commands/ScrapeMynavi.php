@@ -11,30 +11,17 @@ class ScrapeMynavi extends Command
 {
     const HOST = 'https://tenshoku.mynavi.jp';
     const FILE_PATH = 'app/mynavi_jobs.csv';
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'scrape:mynavi';
+    const PAGE_NUM = 2;
+    const WAIT_TIME = 30;
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
+    protected $signature = 'scrape:mynavi';
     protected $description = 'Scrape Mynavi';
 
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
     public function handle()
     {
-        // $this->truncateTables();
-        // $this->saveUrls();
-        // $this->saveJobs();
+        $this->truncateTables();
+        $this->saveUrls();
+        $this->saveJobs();
         $this->exportCsv();
     }
 
@@ -46,39 +33,51 @@ class ScrapeMynavi extends Command
 
     private function saveUrls()
     {
-        foreach (range(1, 1) as $num) {
-            $url = $this::HOST . '/list/pg' . $num . '/';
-            $crawler = \Goutte::request('GET', $url);
-            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
-                $href = $node->attr('href');
-                $fullUrl = 'https:' . $href;
-                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
-                return [
-                    'url' => $trimmedUrl,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            });
-
+        foreach (range(1, $this::PAGE_NUM) as $index => $num) {
+            $urls = $this->getUrls($num);
             DB::table('mynavi_urls')->insert($urls);
-            sleep(30);
+            if ($index > 2) {
+                break;
+            }
+            $this->wait();
         }
+    }
+
+    private function getUrls($num)
+    {
+        $url = $this::HOST . '/list/pg' . $num . '/';
+        $crawler = \Goutte::request('GET', $url);
+        return $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+            $href = $node->attr('href');
+            $fullUrl = 'https:' . $href;
+            $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+            return [
+                'url' => $trimmedUrl,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        });
     }
 
     private function saveJobs()
     {
         foreach (MynaviUrl::all() as $mynaviUrl) {
-            $url = $this::HOST . $mynaviUrl->url;
-            $crawler = \Goutte::request('GET', $url);
-            mynaviJob::create([
-                'url' => $url,
-                'title' => $this->getTitle($crawler),
-                'company_name' => $this->getCompanyName($crawler),
-                'features' => $this->getFeatures($crawler),
-            ]);
-            // break;
-            sleep(30);
+            $job = $this->getJob($mynaviUrl);
+            mynaviJob::create($job);
+            $this->wait();
         }
+    }
+
+    private function getJob($mynaviUrl)
+    {
+        $url = $this::HOST . $mynaviUrl->url;
+        $crawler = \Goutte::request('GET', $url);
+        return [
+            'url' => $url,
+            'title' => $this->getTitle($crawler),
+            'company_name' => $this->getCompanyName($crawler),
+            'features' => $this->getFeatures($crawler),
+        ];
     }
 
     private function getTitle($crawler)
@@ -102,14 +101,40 @@ class ScrapeMynavi extends Command
 
     private function exportCsv()
     {
-        $file = fopen(storage_path($this::FILE_PATH), 'w');
+        $file = $this->openFile();
+        $this->writeHeader($file);
+        $this->writeData($file);
+        fclose($file);
+    }
 
+    private function openFile()
+    {
+        $file = fopen(storage_path($this::FILE_PATH), 'w');
         if (!$file) {
             throw new \Exception('ファイルの作成に失敗しました');
         }
+        fwrite($file, "\xEF\xBB\xBF");
+        return $file;
+    }
 
+    private function writeHeader($file)
+    {
         if (!fputcsv($file, ['id', 'url', 'title', 'company_name', 'features'])) {
             throw new \Exception('ヘッダーの書き込みに失敗しました。');
-        };
+        }
+    }
+
+    private function writeData($file)
+    {
+        foreach (mynaviJob::all() as $job) {
+            if (!fputcsv($file, [$job->id, $job->url, $job->title, $job->company_name, $job->features])) {
+                throw new \Exception('データの書き込みに失敗しました。');
+            }
+        }
+    }
+
+    private function wait()
+    {
+        sleep($this::WAIT_TIME);
     }
 }

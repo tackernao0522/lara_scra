@@ -316,3 +316,126 @@ return [
 
 ];
 ```
+
+## スクレイピング実行用コマンドの作成
+
+- `% php artisan make:command ScrapeMynavi`を実行  
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapeMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+
+class ScrapeMynavi extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi'; // 編集
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi'; // 編集
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        echo 10 . PHP_EOL; // 追加(動作確認用)
+        return Command::SUCCESS;
+    }
+}
+```
+
+- `% php artisan list`を実行するとコマンドの詳細を確認できる  
+
+```:terminal
+ scrape
+  scrape:mynavi          Scrape Mynavi
+```
+
+- `% php artisan scrape:mynavi`を実行  
+
+```terminal
+10
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapeMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+
+class ScrapeMynavi extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        // 編集
+        $crawler = \Goutte::request('GET', 'https://duckduckgo.com/html/?q=Laravel');
+        $crawler->filter('.result__title .result__a')->each(function ($node) {
+            dump($node->text());
+        });
+        // ここまで
+    }
+}
+```
+
+- `% php artisan scrape:mynavi`を実行  
+
+```:terminal
+"Laravel - The PHP Framework For Web Artisans" // app/Console/Commands/ScrapeMynavi.php:32
+"GitHub - laravel/laravel: Laravel is a web application framework with ..." // app/Console/Commands/ScrapeMynavi.php:32
+"Laravel - The PHP Framework For Web Artisans" // app/Console/Commands/ScrapeMynavi.php:32
+"Laravel - Wikipedia" // app/Console/Commands/ScrapeMynavi.php:32
+"What Is Laravel, And How Do You Get Started with It? - How-To Geek" // app/Console/Commands/ScrapeMynavi.php:32
+"The Laravel Framework · GitHub" // app/Console/Commands/ScrapeMynavi.php:32
+"The Laravel PHP Framework - Web App Construction for Everyone - Kinsta" // app/Console/Commands/ScrapeMynavi.php:32
+"Laravel Tutorial: The Ultimate Guide (2023) - Mastering Backend" // app/Console/Commands/ScrapeMynavi.php:32
+"What is Laravel? | DigitalOcean" // app/Console/Commands/ScrapeMynavi.php:32
+"Laravel Bootcamp" // app/Console/Commands/ScrapeMynavi.php:32
+"An Introduction to the Laravel PHP Framework — SitePoint" // app/Console/Commands/ScrapeMynavi.php:32
+"How To Install Laravel on Windows, macOS, and Linux - Kinsta®" // app/Console/Commands/ScrapeMynavi.php:32
+"Laravel Tutorial: What It is, Framework, Features - Javatpoint" // app/Console/Commands/ScrapeMynavi.php:32
+"Learn Laravel PHP Framework - W3Schools" // app/Console/Commands/ScrapeMynavi.php:32
+"Laravel Tutorial for Beginners - Guru99" // app/Console/Commands/ScrapeMynavi.php:32
+"Want To Be a Laravel Developer? Here's Everything You Need To Know - Kinsta" // app/Console/Commands/ScrapeMynavi.php:32
+"Laravel Herd" // app/Console/Commands/ScrapeMynavi.php:32
+"Laracasts: Laravel 8 From Scratch" // app/Console/Commands/ScrapeMynavi.php:32
+"Building Web Applications From Scratch With Laravel" // app/Console/Commands/ScrapeMynavi.php:32
+"Laravel - GeeksforGeeks" // app/Console/Commands/ScrapeMynavi.php:32
+"Laravel Tutorial - Online Tutorials Library" // app/Console/Commands/ScrapeMynavi.php:32
+```

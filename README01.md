@@ -76,7 +76,7 @@
 |Column|Type|Options|
 |:------:|:----:|:-------:|
 |id| | |
-|url| | |
+|url|string| |
 |created_at| | |
 |updated_at| | |
 
@@ -85,7 +85,7 @@
 |Column|Type|Options|
 |:------:|:----:|:-------:|
 |id| | |
-|url| | |
+|url|| |
 |title| | |
 |company_name| | |
 |features| | |
@@ -739,3 +739,48 @@ class ScrapeMynavi extends Command
 "/jobinfo-351739-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:36
 "/jobinfo-329417-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:36
 ```
+
+## テーブル及びモデルの作成
+
+`% php artisan make:model MynaviUrl`を実行  
+
+`% php artisan make:migration create_mynavi_urls_table --create=mynavi_urls`を実行  
+
+`database/migrations/create_mynavi_urls_table.php`を編集  
+
+```php:create_mynavi_urls_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('mynavi_urls', function (Blueprint $table) {
+            $table->id();
+            $table->string('url');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('mynavi_urls');
+    }
+};
+```
+
+- `% php artisan migrate`を実行  

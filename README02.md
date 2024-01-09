@@ -1,3 +1,10 @@
+# CSVへの書き出し
+
+## CSVへの書き出しの為の実装
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapingMynavi.php
 <?php
 
 namespace App\Console\Commands;
@@ -10,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 class ScrapeMynavi extends Command
 {
     const HOST = 'https://tenshoku.mynavi.jp';
-    const FILE_PATH = 'app/mynavi_jobs.csv';
+    const FILE_PATH = 'app/mynavi_jobs.csv'; // 追加
     /**
      * The name and signature of the console command.
      *
@@ -35,7 +42,7 @@ class ScrapeMynavi extends Command
         // $this->truncateTables();
         // $this->saveUrls();
         // $this->saveJobs();
-        $this->exportCsv();
+        $this->exportCsv(); // 追加
     }
 
     private function truncateTables()
@@ -100,8 +107,13 @@ class ScrapeMynavi extends Command
         return implode(',', $features);
     }
 
+    // 追加
     private function exportCsv()
     {
         $file = fopen(storage_path($this::FILE_PATH), 'w');
     }
+    // ここまで
 }
+```
+
+- `% php artisan scrape:mynavi`を実行(空のCSVができているか確認)  

@@ -439,3 +439,303 @@ class ScrapeMynavi extends Command
 "Laravel - GeeksforGeeks" // app/Console/Commands/ScrapeMynavi.php:32
 "Laravel Tutorial - Online Tutorials Library" // app/Console/Commands/ScrapeMynavi.php:32
 ```
+
+## robots.txtの確認
+
+`https://tenshoku.mynavi.jp/robots.txt`にアクセスする  
+
+```txt:robots.text
+User-agent: *
+Sitemap: https://tenshoku.mynavi.jp/sitemap/sitemap_index.xml
+Disallow: /a/
+Disallow: /b/
+Disallow: /c/
+Disallow: /client/
+Disallow: /entry/
+Disallow: /healthcheck/
+Disallow: /help/client/
+Disallow: /jobset/
+Disallow: /manage/
+Disallow: /mt4/
+Disallow: /o/
+Disallow: /rss/
+Disallow: /private/
+Disallow: /return/
+Disallow: /setting/
+Disallow: /sonet/
+Disallow: /useset/
+Disallow: /centuserset/
+Disallow: /info/
+Disallow: /question/form/
+Disallow: /job/form/
+Disallow: /url-forwarder/
+Disallow: /bookmark/
+Disallow: /help/form/
+Disallow: /ajax/*
+Allow: /ajax/get-dynamic-related-link
+Disallow: /plst/admin/
+Disallow: /plst/client/
+Disallow: /authenticate/
+Disallow: /login-bookmarkConfirmation/
+Disallow: /republish/
+Disallow: /login-republishConfirmation/
+Disallow: /fw/
+User-agent: bingbot
+Crawl-delay: 30 <!-- 30秒は空けること -->
+```
+
+## 一覧URLの取得
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapeMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+
+class ScrapeMynavi extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        // 編集
+        $url = 'https://tenshoku.mynavi.jp/list/pg3/';
+        $crawler = \Goutte::request('GET', $url);
+        $crawler->filter('.result__title .result__a')->each(function ($node) {
+            dump($node->text());
+        });
+        // ここまで
+    }
+}
+```
+
+## 取得したい部分のhtml
+
+hrefの中のURLを取得したい  
+
+```html:sample.html
+<p class="cassetteRecruit__copy boxAdjust">
+      <a class="js__ga--setCookieOccName" target="_blank" href="//tenshoku.mynavi.jp/jobinfo-209712-1-129-1/">【事務スタッフ】未経験歓迎♪在宅勤務あり♪関東/東海/関西募集</a>
+      <span class="labelEmploymentStatus">正社員</span>
+</p>
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapeMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+
+class ScrapeMynavi extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        $url = 'https://tenshoku.mynavi.jp/list/pg3/';
+        $crawler = \Goutte::request('GET', $url);
+        // 編集
+        $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+            dump($node->attr('href'));
+        });
+        // ここまで
+    }
+}
+```
+
+- `% php artisan scrape:mynavi`を実行  
+
+```:terminal
+groovy@groovy-no-MBP scraping_prac % php artisan scrape:mynavi
+"//tenshoku.mynavi.jp/jobinfo-90887-1-352-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-155724-1-2-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-203477-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-233094-1-28-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-209249-1-15-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-200119-1-57-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-223003-1-16-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-350812-1-1-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-351373-1-1-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-4844-1-289-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-293432-1-11-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-347866-1-2-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-209712-1-135-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-339535-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-256551-1-11-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-310965-1-2-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-323672-1-12-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-212905-1-157-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-100465-1-186-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-332225-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-297967-1-283-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-340933-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-314472-1-5-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-111025-1-147-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-250792-1-92-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-257635-1-130-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-332980-1-16-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-170136-1-14-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-343434-1-10-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-326951-1-7-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-209712-1-134-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-197313-1-174-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-321112-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-311669-1-7-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-224262-1-49-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-188089-1-172-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-315030-1-7-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-139563-1-232-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-150886-1-8-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-128275-1-111-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-135431-1-298-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-223512-1-13-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-344556-1-5-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-134413-1-359-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-270707-1-105-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-239456-1-17-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-170601-1-361-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-212905-1-159-1/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-351739-1-2-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+"//tenshoku.mynavi.jp/jobinfo-329417-1-2-1/msg/" // app/Console/Commands/ScrapeMynavi.php:33
+```
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapeMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+
+class ScrapeMynavi extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        $url = 'https://tenshoku.mynavi.jp/list/pg3/';
+        $crawler = \Goutte::request('GET', $url);
+        // 編集
+        $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+            $href = $node->attr('href');
+            $fullUrl = 'https:' . $href;
+            $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+            dump($trimmedUrl);
+        });
+        // ここまで
+    }
+}
+```
+
+- `% php artisan scrape:mynavi`を実行  
+
+```:terminal
+"/jobinfo-90887-1-352-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-155724-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-203477-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-233094-1-28-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-209249-1-15-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-200119-1-57-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-223003-1-16-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-350812-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-351373-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-4844-1-289-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-293432-1-11-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-347866-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-209712-1-135-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-339535-1-3-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-256551-1-11-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-310965-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-323672-1-12-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-212905-1-157-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-100465-1-186-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-332225-1-4-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-297967-1-283-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-340933-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-314472-1-5-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-111025-1-147-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-250792-1-92-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-257635-1-130-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-332980-1-16-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-170136-1-14-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-343434-1-10-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-326951-1-7-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-209712-1-134-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-197313-1-174-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-321112-1-1-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-311669-1-7-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-224262-1-49-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-188089-1-172-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-315030-1-7-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-139563-1-232-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-150886-1-8-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-128275-1-111-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-135431-1-298-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-223512-1-13-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-344556-1-5-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-134413-1-359-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-270707-1-105-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-239456-1-17-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-170601-1-361-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-212905-1-159-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-351739-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:36
+"/jobinfo-329417-1-2-1/" // app/Console/Commands/ScrapeMynavi.php:36
+```

@@ -85,10 +85,10 @@
 |Column|Type|Options|
 |:------:|:----:|:-------:|
 |id| | |
-|url|| |
-|title| | |
-|company_name| | |
-|features| | |
+|url|string| |
+|title|string| |
+|company_name|string| |
+|features|text| |
 |created_at| | |
 |updated_at| | |
 
@@ -910,3 +910,138 @@ class ScrapeMynavi extends Command
 ```
 
 - `% php artisan scrape:mynavi`を実行  
+
+## 全てのページのURL一覧を取得する(現状ではpage3のみの50件分しか取得していない)
+
+`app/Console/Commands/ScrapeMynavi.php`を編集  
+
+```php:ScrapeMynavi.php
+<?php
+
+namespace App\Console\Commands;
+
+use Carbon\Carbon;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class ScrapeMynavi extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'scrape:mynavi';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Scrape Mynavi';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        $this->truncateTables();
+        $this->saveUrls();
+    }
+
+    private function truncateTables()
+    {
+        DB::table('mynavi_urls')->truncate();
+    }
+
+    private function saveUrls()
+    {
+        // 追加 取り敢えず1ページ目〜2ページ目まで実行する書き方
+        foreach (range(1, 2) as $num) {
+            $url = 'https://tenshoku.mynavi.jp/list/pg' . $num . '/';
+            $crawler = \Goutte::request('GET', $url);
+            $urls = $crawler->filter('.cassetteRecruit__copy > a')->each(function ($node) {
+                $href = $node->attr('href');
+                $fullUrl = 'https:' . $href;
+                $trimmedUrl = str_replace(['https://tenshoku.mynavi.jp', 'msg/'], '', $fullUrl);
+                return [
+                    'url' => $trimmedUrl,
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ];
+            });
+
+            DB::table('mynavi_urls')->insert($urls);
+            sleep(30); // 必ず入れる
+        }
+    }
+}
+```
+
+`% php artisan scrape:mynavi`を実行  
+
+## 求人情報用モデル及びテーブルの作成(mynavi_jobs)
+
+- `% php artisan make:model mynaviJob`を実行  
+
+`app/Models/mynaviJob.php`を編集  
+
+```php:mynaviJob.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class mynaviJob extends Model
+{
+    use HasFactory;
+
+    protected $guarded = []; // 追記
+}
+```
+
+`database/migrations/create_mynavi_jobs_table.php`を編集  
+
+```php:mynavi_jobs_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('mynavi_jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('url');
+            $table->string('title');
+            $table->string('company_name');
+            $table->text('features');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('mynavi_jobs');
+    }
+};
+```
+
+- `% php artisan migrate`を実行  
